@@ -1,4 +1,5 @@
-const http = require("http");
+const express = require("express");
+
 const axios = require("axios");
 const Discord = require("discord.js");
 const client = new Discord.Client();
@@ -50,15 +51,8 @@ client.on("message", function (message) {
   console.log(JSON.stringify(message));
 });
 
-const hostname = "127.0.0.1";
+const app = express();
 const port = process.env.PORT || 3001;
+app.get("/", (req, res) => res.send("Hello from Render!"));
 
-const server = http.createServer((req, res) => {
-  res.statusCode = 200;
-  res.setHeader("Content-Type", "text/plain");
-  res.end("Hello World");
-});
-
-server.listen(port, hostname, () => {
-  console.log(`Server running at http://${hostname}:${port}/`);
-});
+app.listen(port, () => console.log(`Example app listening on port ${port}!`));
