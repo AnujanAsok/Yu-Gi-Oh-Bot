@@ -1,7 +1,7 @@
 const axios = require("axios");
 const Discord = require("discord.js");
 const client = new Discord.Client();
-client.login(config.BOT_TOKEN);
+client.login(process.env.BOT_TOKEN);
 const RARITIES = [
   "Common",
   "Rare",
