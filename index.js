@@ -12,6 +12,17 @@ const RARITIES = [
   "Holofoil Rare",
   "Ultra Rare",
   "Ultimate Rare",
+  "Secret Rare",
+  "Ultra Secret Rare",
+  "Secret Ultra Rare",
+  "Prismatic Secret Rare",
+  "Parallel Rare",
+  "Parallel Common",
+  "Super Parallel Rare",
+  "Ultra Parallel Rare",
+  "Starfoil Rare",
+  "Ghost Rare",
+  "Gold Ultra Rare",
 ];
 client.on("message", function (message) {
   if (message.author.bot) return;
