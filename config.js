@@ -1,4 +1,2 @@
-const config = {
-  BOT_TOKEN: process.env.BOT_TOKEN,
-};
-export default BOT_TOKEN;
+const BOT_TOKEN = process.env.BOT_TOKEN;
+exports.BOT_TOKEN = BOT_TOKEN;
