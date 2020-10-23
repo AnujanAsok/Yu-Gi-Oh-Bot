@@ -3,7 +3,7 @@ const config = require("./config.js");
 const axios = require("axios");
 const Discord = require("discord.js");
 const client = new Discord.Client();
-client.login(config.BOT_TOKEN); //test comment
+client.login(config.BOT_TOKEN);
 
 const RARITIES = [
   "Common",
