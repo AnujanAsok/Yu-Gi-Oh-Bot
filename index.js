@@ -1,9 +1,9 @@
 const express = require("express");
-
+const config = require("./config.json");
 const axios = require("axios");
 const Discord = require("discord.js");
 const client = new Discord.Client();
-client.login(process.env.BOT_TOKEN);
+client.login(config.BOT_TOKEN);
 
 const RARITIES = [
   "Common",
@@ -61,6 +61,15 @@ client.on("message", function (message) {
 
   console.log(JSON.stringify(message));
 });
+
+// var admin = require("firebase-admin");
+
+// var serviceAccount = require("path/to/serviceAccountKey.json");
+
+// admin.initializeApp({
+//   credential: admin.credential.cert(serviceAccount),
+//   databaseURL: "https://yu-gi-oh-inventory.firebaseio.com",
+// });
 
 const app = express();
 const port = process.env.PORT || 3001;
