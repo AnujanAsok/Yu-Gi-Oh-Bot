@@ -1,2 +1,2 @@
-const BOT_TOKEN = "NzY3NDg1MDY4MjcxNjgxNTY2.X4ymKw.te9oRX262Mbo4X-fXXTmIj_ed40";
+const BOT_TOKEN = process.env.BOT_TOKEN;
 exports.BOT_TOKEN = BOT_TOKEN;
