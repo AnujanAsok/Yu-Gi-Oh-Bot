@@ -1,5 +1,5 @@
 const express = require("express");
-const config = require("./config.json");
+const config = require("./config.js");
 const axios = require("axios");
 const Discord = require("discord.js");
 const client = new Discord.Client();
