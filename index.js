@@ -4,8 +4,6 @@ const axios = require("axios");
 const Discord = require("discord.js");
 
 var admin = require("firebase-admin");
-console.log("firebase_service_account");
-console.log(process.env.FIREBASE_SERVICE_ACCOUNT);
 var serviceAccount;
 if (process.env.FIREBASE_SERVICE_ACCOUNT) {
   serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
