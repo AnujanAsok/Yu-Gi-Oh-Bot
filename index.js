@@ -2,6 +2,18 @@ const express = require("express");
 const config = require("./config.js");
 const axios = require("axios");
 const Discord = require("discord.js");
+
+var admin = require("firebase-admin");
+
+var serviceAccount = require("./yu-gi-oh-inventory-firebase-adminsdk-z8h62-7925253eaa.json");
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: "https://yu-gi-oh-inventory.firebaseio.com",
+});
+
+var db = admin.database();
+
 const client = new Discord.Client();
 client.login(config.BOT_TOKEN);
 
@@ -26,50 +38,74 @@ const RARITIES = [
 ];
 client.on("message", function (message) {
   if (message.author.bot) return;
-  if (!message.content.startsWith("!draw")) {
-    return;
+  if (message.content.startsWith("!draw")) {
+    drawCommand(message);
   }
-
-  axios
-    .get("https://db.ygoprodeck.com/api/v7/randomcard.php")
-    .then(function (response) {
-      let highestRarityIndex = 0;
-      let card = response.data;
-      for (let i = 0; i < card.card_sets.length; i++) {
-        let cardSetRarity = card.card_sets[i].set_rarity;
-        let cardSetRarityIndex = RARITIES.indexOf(cardSetRarity);
-        if (highestRarityIndex < cardSetRarityIndex) {
-          highestRarityIndex = cardSetRarityIndex;
-        }
-      }
-
-      message.reply(
-        "You just drew " +
-          response.data.name +
-          ", a " +
-          RARITIES[highestRarityIndex] +
-          " card"
-      );
-      const attachment = new Discord.MessageAttachment(
-        response.data.card_images[0].image_url
-      );
-      // Send the attachment in the message channel
-      message.channel.send(attachment);
-      // message.reply(response.data.name);
-      console.log(JSON.stringify(response.data));
-    });
-
-  console.log(JSON.stringify(message));
 });
 
-// var admin = require("firebase-admin");
+const drawCommand = (message) => {
+  var ref = db.ref("users");
+  ref.once("value", function (snapshot) {
+    const userData = snapshot.val();
+    let userDraw = message.author.id;
+    let lastBotUse = userData[userDraw].lastDrawTime;
+    let timeDifference = Date.now() - lastBotUse;
+    console.log(userData);
+    console.log(lastBotUse);
+    console.log(Date.now());
+    console.log(timeDifference);
+    //10800000 = 3 hours in ms
 
-// var serviceAccount = require("path/to/serviceAccountKey.json");
+    if (timeDifference > 1800000) {
+      axios
+        .get("https://db.ygoprodeck.com/api/v7/randomcard.php")
+        .then(function (response) {
+          let highestRarityIndex = 0;
+          let card = response.data;
+          for (let i = 0; i < card.card_sets.length; i++) {
+            let cardSetRarity = card.card_sets[i].set_rarity;
+            let cardSetRarityIndex = RARITIES.indexOf(cardSetRarity);
+            if (highestRarityIndex < cardSetRarityIndex) {
+              highestRarityIndex = cardSetRarityIndex;
+            }
+          }
 
-// admin.initializeApp({
-//   credential: admin.credential.cert(serviceAccount),
-//   databaseURL: "https://yu-gi-oh-inventory.firebaseio.com",
-// });
+          message.reply(
+            "You just drew " +
+              response.data.name +
+              ", a " +
+              RARITIES[highestRarityIndex] +
+              " card"
+          );
+          const attachment = new Discord.MessageAttachment(
+            response.data.card_images[0].image_url
+          );
+          // Send the attachment in the message channel
+          message.channel.send(attachment);
+          // // message.reply(response.data.name);
+          // console.log(JSON.stringify(response.data));
+
+          var ref = db.ref("users");
+          ref.update({
+            [message.author.id]: {
+              lastDrawTime: Date.now(),
+              name: message.author.username,
+            },
+          });
+        });
+    } else {
+      let timeDifferenceInMs = 1800000 - timeDifference;
+      let timeDifferenceInMinutes = Math.round(timeDifferenceInMs / 1000 / 60);
+      message.reply(
+        "You must wait " +
+          timeDifferenceInMinutes +
+          " minutes before you can draw again."
+      );
+    }
+    console.log(JSON.stringify(message));
+    console.log(JSON.stringify(message.author));
+  });
+};
 
 const app = express();
 const port = process.env.PORT || 3001;
