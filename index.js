@@ -4,8 +4,11 @@ const axios = require("axios");
 const Discord = require("discord.js");
 
 var admin = require("firebase-admin");
-
-var serviceAccount = require("./yu-gi-oh-inventory-firebase-adminsdk-z8h62-7925253eaa.json");
+console.log("firebase_service_account");
+console.log(process.env.FIREBASE_SERVICE_ACCOUNT);
+var serviceAccount =
+  process.env.FIREBASE_SERVICE_ACCOUNT ||
+  require("./yu-gi-oh-inventory-firebase-adminsdk-z8h62-7925253eaa.json");
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -54,7 +57,6 @@ const drawCommand = (message) => {
     console.log(lastBotUse);
     console.log(Date.now());
     console.log(timeDifference);
-    //10800000 = 3 hours in ms
 
     if (timeDifference > 1800000) {
       axios
