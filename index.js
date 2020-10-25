@@ -64,7 +64,9 @@ const drawCommand = (message) => {
       console.log(timeDifference);
     }
 
-    if (userDoesNotExist || timeDifference > 1800000) {
+    //1800000 is 30 minutes in milliseconds
+
+    if (userDoesNotExist || timeDifference > 60000) {
       axios
         .get("https://db.ygoprodeck.com/api/v7/randomcard.php")
         .then(function (response) {
@@ -102,7 +104,7 @@ const drawCommand = (message) => {
           });
         });
     } else {
-      let timeDifferenceInMs = 1800000 - timeDifference;
+      let timeDifferenceInMs = 60000 - timeDifference;
       let timeDifferenceInMinutes = Math.round(timeDifferenceInMs / 1000 / 60);
       message.reply(
         "You must wait " +
