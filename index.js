@@ -105,11 +105,11 @@ const drawCommand = (message) => {
         });
     } else {
       let timeDifferenceInMs = 60000 - timeDifference;
-      let timeDifferenceInMinutes = Math.round(timeDifferenceInMs / 1000 / 60);
+      let timeDifferenceInSeconds = Math.round(timeDifferenceInMs / 1000);
       message.reply(
         "You must wait " +
-          timeDifferenceInMinutes +
-          " minutes before you can draw again."
+          timeDifferenceInSeconds +
+          " seconds before you can draw again."
       );
     }
     console.log(JSON.stringify(message));
