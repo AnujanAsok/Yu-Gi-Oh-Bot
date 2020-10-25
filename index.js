@@ -6,9 +6,12 @@ const Discord = require("discord.js");
 var admin = require("firebase-admin");
 console.log("firebase_service_account");
 console.log(process.env.FIREBASE_SERVICE_ACCOUNT);
-var serviceAccount =
-  process.env.FIREBASE_SERVICE_ACCOUNT ||
-  require("./yu-gi-oh-inventory-firebase-adminsdk-z8h62-7925253eaa.json");
+var serviceAccount;
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+} else {
+  serviceAccount = require("./yu-gi-oh-inventory-firebase-adminsdk-z8h62-7925253eaa.json");
+}
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
