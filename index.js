@@ -52,14 +52,19 @@ const drawCommand = (message) => {
   ref.once("value", function (snapshot) {
     const userData = snapshot.val();
     let userDraw = message.author.id;
-    let lastBotUse = userData[userDraw].lastDrawTime;
-    let timeDifference = Date.now() - lastBotUse;
-    console.log(userData);
-    console.log(lastBotUse);
-    console.log(Date.now());
-    console.log(timeDifference);
+    let user = userData[userDraw];
+    const userDoesNotExist = !user;
+    let timeDifference;
+    if (user) {
+      let lastBotUse = user.lastDrawTime;
+      timeDifference = Date.now() - lastBotUse;
+      console.log(userData);
+      console.log(lastBotUse);
+      console.log(Date.now());
+      console.log(timeDifference);
+    }
 
-    if (timeDifference > 1800000) {
+    if (userDoesNotExist || timeDifference > 1800000) {
       axios
         .get("https://db.ygoprodeck.com/api/v7/randomcard.php")
         .then(function (response) {
