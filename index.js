@@ -102,7 +102,7 @@ const drawCommand = (message) => {
             name: message.author.username,
           });
 
-          const inventoryRef = ref.child(message.author.id + "/inventory");
+          const inventoryRef = userRef.child("inventory");
           inventoryRef.update({
             [response.data.id]: {
               name: response.data.name,
