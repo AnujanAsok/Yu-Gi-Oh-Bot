@@ -109,6 +109,7 @@ const drawCommand = (message) => {
               image: response.data.card_images[0].image_url,
               price: response.data.card_prices[0].tcgplayer_price,
               type: response.data.type,
+              rarities: RARITIES[highestRarityIndex],
             },
           });
         });
