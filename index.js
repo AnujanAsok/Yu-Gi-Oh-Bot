@@ -96,15 +96,24 @@ const drawCommand = (message) => {
           // console.log(JSON.stringify(response.data));
 
           var ref = db.ref("users");
-          ref.update({
-            [message.author.id]: {
-              lastDrawTime: Date.now(),
-              name: message.author.username,
+          const userRef = ref.child(message.author.id);
+          userRef.update({
+            lastDrawTime: Date.now(),
+            name: message.author.username,
+          });
+
+          const inventoryRef = ref.child(message.author.id + "/inventory");
+          inventoryRef.update({
+            [response.data.id]: {
+              name: response.data.name,
+              image: response.data.card_images[0].image_url,
+              price: response.data.card_prices[0].tcgplayer_price,
+              type: response.data.type,
             },
           });
         });
     } else {
-      let timeDifferenceInMs = 60000 - timeDifference;
+      let timeDifferenceInMs = 60000 - timeDifference; //60000 is 1 minute
       let timeDifferenceInSeconds = Math.round(timeDifferenceInMs / 1000);
       message.reply(
         "You must wait " +
@@ -117,7 +126,25 @@ const drawCommand = (message) => {
   });
 };
 
-const inventoryCommand = () => {};
+/*
+const inventoryCommand = () => {
+
+if user draws a card
+store name of card to firebase under the key cardName
+when the same user draws a second card, store the name of the second card under the previous draw within cardName
+continue to do this to all additional cards
+
+user{
+  userID{
+    lastDrawTime: xxxx
+    username: ""
+    cardName: "Blue Eyes White Dragon", "Red Eyes Black Dragon"
+  }
+}
+
+
+};
+*/
 
 const app = express();
 const port = process.env.PORT || 3001;
