@@ -152,10 +152,10 @@ const inventoryCommand = (message) => {
     const userIdentification = message.author.id;
     const userInventory = userData[userIdentification].inventory;
     // let cardIDs = Object.keys(userInventory);
-    let cardInfo = Object.values(userInventory);
+    let cardData = Object.values(userInventory);
     let inventoryList = "";
 
-    cardInfo.forEach(function (item) {
+    cardData.forEach(function (item) {
       inventoryList += "•  " + item.name + " \n";
     });
 
