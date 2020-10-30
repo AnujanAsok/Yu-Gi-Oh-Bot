@@ -152,9 +152,9 @@ const inventoryCommand = (message) => {
     const userIdentification = message.author.id;
     const userInventory = userData[userIdentification].inventory;
 
-    const inventoryList = Object.values(userInventory).map(function (item) {
-      return "•  " + item.name;
-    });
+    const inventoryList = Object.values(userInventory).map(
+      (item) => "•  " + item.name
+    );
 
     message.reply("your inventory: \n" + inventoryList.join("\n"));
   });
