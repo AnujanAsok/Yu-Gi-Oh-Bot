@@ -151,7 +151,6 @@ const inventoryCommand = (message) => {
     const userData = snapshot.val();
     const userIdentification = message.author.id;
     const userInventory = userData[userIdentification].inventory;
-    // let cardIDs = Object.keys(userInventory);
     let cardData = Object.values(userInventory);
     let inventoryList = "";
 
