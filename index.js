@@ -42,7 +42,8 @@ const RARITIES = [
 ];
 client.on("message", function (message) {
   if (message.author.bot) return;
-  else if (message.content.startsWith("!draw")) {
+
+  if (message.content.startsWith("!draw")) {
     drawCommand(message);
   } else if (message.content.startsWith("!inventory")) {
     inventoryCommand(message);
@@ -148,21 +149,17 @@ const inventoryCommand = (message) => {
   var ref = db.ref("users");
   ref.once("value", function (snapshot) {
     const userData = snapshot.val();
-    let userInventory = message.author.id;
-    let inventoryRef = "inventory";
-    let inventoryNames;
-    let userInventoryAccess = userData[userInventory][inventoryRef];
-    let cardID = Object.keys(userInventoryAccess);
-    let finalStringInventory = "";
+    const userIdentification = message.author.id;
+    const userInventoryAccess = userData[userIdentification].inventory;
+    let cardIDs = Object.keys(userInventoryAccess);
+    let inventoryList = "";
 
-    for (let i = 0; i < cardID.length; i++) {
-      let keyCard = cardID[i];
-
-      inventoryNames = "•  " + userInventoryAccess[keyCard]["name"];
-      finalStringInventory += inventoryNames + " \n";
+    for (let i = 0; i < cardIDs.length; i++) {
+      let keyCard = cardIDs[i];
+      inventoryList += "•  " + userInventoryAccess[keyCard]["name"] + " \n";
     }
 
-    message.reply("your inventory: \n" + finalStringInventory);
+    message.reply("your inventory: \n" + inventoryList);
   });
 };
 
