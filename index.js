@@ -154,9 +154,7 @@ const inventoryCommand = (message) => {
     let cardData = Object.values(userInventory);
     let inventoryList = "";
 
-    cardData.forEach(function (item) {
-      inventoryList += "•  " + item.name + " \n";
-    });
+    cardData.forEach((item) => (inventoryList += "•  " + item.name + " \n"));
 
     message.reply("your inventory: \n" + inventoryList);
   });
