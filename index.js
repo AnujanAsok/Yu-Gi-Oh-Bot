@@ -42,8 +42,11 @@ const RARITIES = [
 ];
 client.on("message", function (message) {
   if (message.author.bot) return;
+
   if (message.content.startsWith("!draw")) {
     drawCommand(message);
+  } else if (message.content.startsWith("!inventory")) {
+    inventoryCommand(message);
   }
 });
 
@@ -102,6 +105,21 @@ const drawCommand = (message) => {
             name: message.author.username,
           });
 
+          /*
+          if user draws a card
+          store name of card to firebase under the key cardName
+          when the same user draws a second card, store the name of the second card under the previous draw within cardName
+          continue to do this to all additional cards
+          
+          user{
+            userID{
+              lastDrawTime: xxxx
+              username: ""
+              cardName: "Blue Eyes White Dragon", "Red Eyes Black Dragon"
+            }
+          }
+          */
+
           const inventoryRef = userRef.child("inventory");
           inventoryRef.update({
             [response.data.id]: {
@@ -127,25 +145,20 @@ const drawCommand = (message) => {
   });
 };
 
-/*
-const inventoryCommand = () => {
+const inventoryCommand = (message) => {
+  var ref = db.ref("users");
+  ref.once("value", function (snapshot) {
+    const userData = snapshot.val();
+    const userIdentification = message.author.id;
+    const userInventory = userData[userIdentification].inventory;
 
-if user draws a card
-store name of card to firebase under the key cardName
-when the same user draws a second card, store the name of the second card under the previous draw within cardName
-continue to do this to all additional cards
+    const inventoryList = Object.values(userInventory).map(
+      (item) => "•  " + item.name
+    );
 
-user{
-  userID{
-    lastDrawTime: xxxx
-    username: ""
-    cardName: "Blue Eyes White Dragon", "Red Eyes Black Dragon"
-  }
-}
-
-
+    message.reply("your inventory: \n" + inventoryList.join("\n"));
+  });
 };
-*/
 
 const app = express();
 const port = process.env.PORT || 3001;
