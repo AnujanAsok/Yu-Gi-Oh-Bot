@@ -150,14 +150,13 @@ const inventoryCommand = (message) => {
   ref.once("value", function (snapshot) {
     const userData = snapshot.val();
     const userIdentification = message.author.id;
-    const userInventoryAccess = userData[userIdentification].inventory;
-    let cardIDs = Object.keys(userInventoryAccess);
+    const userInventory = userData[userIdentification].inventory;
+    let cardIDs = Object.keys(userInventory);
     let inventoryList = "";
 
-    for (let i = 0; i < cardIDs.length; i++) {
-      let keyCard = cardIDs[i];
-      inventoryList += "•  " + userInventoryAccess[keyCard].name + " \n";
-    }
+    cardIDs.forEach(function (item) {
+      inventoryList += "•  " + userInventory[item].name + " \n";
+    });
 
     message.reply("your inventory: \n" + inventoryList);
   });
