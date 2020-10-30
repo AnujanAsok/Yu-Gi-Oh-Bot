@@ -152,11 +152,11 @@ const inventoryCommand = (message) => {
     const userIdentification = message.author.id;
     const userInventory = userData[userIdentification].inventory;
     let cardData = Object.values(userInventory);
-    let inventoryList = "";
+    const inventoryList = [];
 
-    cardData.forEach((item) => (inventoryList += "•  " + item.name + " \n"));
+    cardData.forEach((item) => inventoryList.push("•  " + item.name));
 
-    message.reply("your inventory: \n" + inventoryList);
+    message.reply("your inventory: \n" + inventoryList.join("\n"));
   });
 };
 
