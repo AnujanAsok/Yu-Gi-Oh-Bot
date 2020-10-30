@@ -156,7 +156,7 @@ const inventoryCommand = (message) => {
 
     for (let i = 0; i < cardIDs.length; i++) {
       let keyCard = cardIDs[i];
-      inventoryList += "•  " + userInventoryAccess[keyCard]["name"] + " \n";
+      inventoryList += "•  " + userInventoryAccess[keyCard].name + " \n";
     }
 
     message.reply("your inventory: \n" + inventoryList);
