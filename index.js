@@ -151,10 +151,10 @@ const inventoryCommand = (message) => {
     const userData = snapshot.val();
     const userIdentification = message.author.id;
     const userInventory = userData[userIdentification].inventory;
-    let cardData = Object.values(userInventory);
-    const inventoryList = [];
 
-    cardData.forEach((item) => inventoryList.push("•  " + item.name));
+    const inventoryList = Object.values(userInventory).map(function (item) {
+      return "•  " + item.name;
+    });
 
     message.reply("your inventory: \n" + inventoryList.join("\n"));
   });
