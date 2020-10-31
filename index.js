@@ -83,6 +83,8 @@ const drawCommand = (message) => {
             }
           }
 
+          console.log(response.data);
+
           message.reply(
             "You just drew " +
               response.data.name +
