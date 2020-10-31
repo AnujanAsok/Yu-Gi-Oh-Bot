@@ -105,7 +105,7 @@ const drawCommand = (message) => {
             name: message.author.username,
           });
 
-          /*
+          /* 
           if user draws a card
           store name of card to firebase under the key cardName
           when the same user draws a second card, store the name of the second card under the previous draw within cardName
