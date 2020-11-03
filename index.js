@@ -166,70 +166,41 @@ const inventoryCommand = (message) => {
 
 const lookUpCommand = (message) => {
   const originalMessage = message.content;
-  const fuzzySearchKey = originalMessage.slice(8);
+  const fuzzySearchKey = originalMessage.split(" ").splice(1).join(" ");
+  const fuzzySearchUrl =
+    "https://db.ygoprodeck.com/api/v7/cardinfo.php?&fname=";
+
+  console.log(fuzzySearchUrl + fuzzySearchKey);
 
   axios
-    .get(
-      "https://db.ygoprodeck.com/api/v7/cardinfo.php?&fname=" + fuzzySearchKey
-    )
-    .then(function (cardSearchResults) {
-      console.log(
-        "https://db.ygoprodeck.com/api/v7/cardinfo.php?&fname=" + fuzzySearchKey
+    .get(fuzzySearchUrl + fuzzySearchKey)
+    .then((cardSearchResults) => {
+      const objectsReturnedBySearch = cardSearchResults.data.data;
+      const exactMatchObject = objectsReturnedBySearch.find(
+        (element) => element.name.toLowerCase() === fuzzySearchKey.toLowerCase()
       );
 
-      let searchedCardName;
-      let closestDataIndex = -2;
-      let secondClosestDataIndex;
-      cardSearchResults.data.data.forEach((element, index) => {
-        if (element.name.toLowerCase() === fuzzySearchKey.toLowerCase()) {
-          closestDataIndex = index;
-        } else if (
-          element.name.toLowerCase().startsWith(fuzzySearchKey.toLowerCase())
-        ) {
-          secondClosestDataIndex = index;
-        } else {
-          console.log("This didn't work");
-        }
-      });
+      const closestMatchObject = objectsReturnedBySearch.find((element) =>
+        element.name.toLowerCase().startsWith(fuzzySearchKey.toLowerCase())
+      );
 
-      if (closestDataIndex > -1) {
-        const attachment = new Discord.MessageAttachment(
-          cardSearchResults.data.data[closestDataIndex].card_images[0].image_url
-        );
-        searchedCardName = cardSearchResults.data.data[closestDataIndex].name;
-        message.reply(
-          "The top result for your search is: " +
-            cardSearchResults.data.data[closestDataIndex].name
-        );
-        message.channel.send(attachment);
-      } else if (closestDataIndex < -1) {
-        const attachment = new Discord.MessageAttachment(
-          cardSearchResults.data.data[
-            secondClosestDataIndex
-          ].card_images[0].image_url
-        );
+      const bestCardResult =
+        exactMatchObject || closestMatchObject || objectsReturnedBySearch[0];
 
-        message.reply(
-          "The closest result for your search is: " +
-            cardSearchResults.data.data[secondClosestDataIndex].name
-        );
+      const attachment = new Discord.MessageAttachment(
+        bestCardResult.card_images[0].image_url
+      );
+      message.reply(
+        "The top result for your search is: " + bestCardResult.name
+      );
+      message.channel.send(attachment);
 
-        searchedCardName =
-          cardSearchResults.data.data[secondClosestDataIndex].name;
-        message.channel.send(attachment);
-      }
+      const suggestedSearches = objectsReturnedBySearch
+        .filter((item) => item.name != bestCardResult.name)
+        .slice(0, 6)
+        .map((item, index) => "•  " + item.name);
 
-      const suggestedSearches = cardSearchResults.data.data
-        .filter((item) => item.name != searchedCardName)
-        .map((item, index) => {
-          if (index < 6) {
-            return "•  " + item.name;
-          } else {
-            return;
-          }
-        });
-
-      if (suggestedSearches.length > 1) {
+      if (suggestedSearches.length >= 1) {
         setTimeout(() => {
           //To delay the suggested searches till after the initial card image is sent
           message.reply(
