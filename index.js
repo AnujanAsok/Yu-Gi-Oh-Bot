@@ -165,46 +165,44 @@ const inventoryCommand = (message) => {
 };
 
 const lookUpCommand = (message) => {
-  const originalMessage = message.content;
-  const fuzzySearchKey = originalMessage.split(" ").splice(1).join(" ");
+  const fuzzySearchKey = message.content.split(" ").slice(1).join(" ");
   const fuzzySearchUrl =
-    "https://db.ygoprodeck.com/api/v7/cardinfo.php?&fname=";
+    "https://db.ygoprodeck.com/api/v7/cardinfo.php?&fname=" + fuzzySearchKey;
 
-  console.log(fuzzySearchUrl + fuzzySearchKey);
+  console.log(fuzzySearchUrl);
 
   axios
-    .get(fuzzySearchUrl + fuzzySearchKey)
+    .get(fuzzySearchUrl)
     .then((cardSearchResults) => {
-      const objectsReturnedBySearch = cardSearchResults.data.data;
-      const exactMatchObject = objectsReturnedBySearch.find(
+      const cardDataObjects = cardSearchResults.data.data;
+      const exactMatchCard = cardDataObjects.find(
         (element) => element.name.toLowerCase() === fuzzySearchKey.toLowerCase()
       );
 
-      const closestMatchObject = objectsReturnedBySearch.find((element) =>
+      const closestMatchCard = cardDataObjects.find((element) =>
         element.name.toLowerCase().startsWith(fuzzySearchKey.toLowerCase())
       );
 
       const bestCardResult =
-        exactMatchObject || closestMatchObject || objectsReturnedBySearch[0];
+        exactMatchCard || closestMatchCard || cardDataObjects[0];
 
       const attachment = new Discord.MessageAttachment(
         bestCardResult.card_images[0].image_url
       );
       message.reply(
-        "The top result for your search is: " + bestCardResult.name
+        "the top result for your search is: " + bestCardResult.name
       );
       message.channel.send(attachment);
 
-      const suggestedSearches = objectsReturnedBySearch
-        .filter((item) => item.name != bestCardResult.name)
-        .slice(0, 6)
-        .map((item, index) => "•  " + item.name);
-
-      if (suggestedSearches.length >= 1) {
+      if (cardDataObjects.length >= 1) {
         setTimeout(() => {
+          const suggestedSearches = cardDataObjects
+            .filter((item) => item.id != bestCardResult.id)
+            .slice(0, 6)
+            .map((item) => "•  " + item.name);
           //To delay the suggested searches till after the initial card image is sent
           message.reply(
-            "Other potential cards that match your search are: \n" +
+            "other potential cards that match your search are: \n" +
               suggestedSearches.join("\n")
           );
         }, 1500);
