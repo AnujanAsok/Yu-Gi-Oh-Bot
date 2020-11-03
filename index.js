@@ -194,7 +194,7 @@ const lookUpCommand = (message) => {
       );
       message.channel.send(attachment);
 
-      if (cardDataObjects.length >= 1) {
+      if (cardDataObjects.length > 1) {
         setTimeout(() => {
           const suggestedSearches = cardDataObjects
             .filter((item) => item.id != bestCardResult.id)
