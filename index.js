@@ -40,6 +40,7 @@ const RARITIES = [
   "Ghost Rare",
   "Gold Ultra Rare",
 ];
+
 client.on("message", function (message) {
   if (message.author.bot) return;
 
@@ -49,6 +50,8 @@ client.on("message", function (message) {
     inventoryCommand(message);
   } else if (message.content.startsWith("!lookup")) {
     lookUpCommand(message);
+  } else if (message.content.startsWith("!remove")) {
+    removeCardCommand(message);
   }
 });
 
@@ -56,6 +59,8 @@ const drawCommand = (message) => {
   var ref = db.ref("users");
   ref.once("value", function (snapshot) {
     const userData = snapshot.val();
+    const userIdentification = message.author.id;
+    const userInventory = userData[userIdentification].inventory;
     let userDraw = message.author.id;
     let user = userData[userDraw];
     const userDoesNotExist = !user;
@@ -70,46 +75,46 @@ const drawCommand = (message) => {
     }
 
     //1800000 is 30 minutes in milliseconds
-
-    if (userDoesNotExist || timeDifference > 60000) {
-      axios
-        .get("https://db.ygoprodeck.com/api/v7/randomcard.php")
-        .then(function (response) {
-          let highestRarityIndex = 0;
-          let card = response.data;
-          for (let i = 0; i < card.card_sets.length; i++) {
-            let cardSetRarity = card.card_sets[i].set_rarity;
-            let cardSetRarityIndex = RARITIES.indexOf(cardSetRarity);
-            if (highestRarityIndex < cardSetRarityIndex) {
-              highestRarityIndex = cardSetRarityIndex;
+    if (Object.keys(userInventory).length < 60) {
+      if (userDoesNotExist || timeDifference > 60000) {
+        axios
+          .get("https://db.ygoprodeck.com/api/v7/randomcard.php")
+          .then(function (response) {
+            let highestRarityIndex = 0;
+            let card = response.data;
+            for (let i = 0; i < card.card_sets.length; i++) {
+              let cardSetRarity = card.card_sets[i].set_rarity;
+              let cardSetRarityIndex = RARITIES.indexOf(cardSetRarity);
+              if (highestRarityIndex < cardSetRarityIndex) {
+                highestRarityIndex = cardSetRarityIndex;
+              }
             }
-          }
 
-          console.log(response.data);
+            console.log(response.data);
 
-          message.reply(
-            "You just drew " +
-              response.data.name +
-              ", a " +
-              RARITIES[highestRarityIndex] +
-              " card"
-          );
-          const attachment = new Discord.MessageAttachment(
-            response.data.card_images[0].image_url
-          );
-          // Send the attachment in the message channel
-          message.channel.send(attachment);
-          // // message.reply(response.data.name);
-          // console.log(JSON.stringify(response.data));
+            message.reply(
+              "You just drew " +
+                response.data.name +
+                ", a " +
+                RARITIES[highestRarityIndex] +
+                " card"
+            );
+            const attachment = new Discord.MessageAttachment(
+              response.data.card_images[0].image_url
+            );
+            // Send the attachment in the message channel
+            message.channel.send(attachment);
+            // // message.reply(response.data.name);
+            // console.log(JSON.stringify(response.data));
 
-          var ref = db.ref("users");
-          const userRef = ref.child(message.author.id);
-          userRef.update({
-            lastDrawTime: Date.now(),
-            name: message.author.username,
-          });
+            var ref = db.ref("users");
+            const userRef = ref.child(message.author.id);
+            userRef.update({
+              lastDrawTime: Date.now(),
+              name: message.author.username,
+            });
 
-          /* 
+            /* 
           if user draws a card
           store name of card to firebase under the key cardName
           when the same user draws a second card, store the name of the second card under the previous draw within cardName
@@ -124,26 +129,40 @@ const drawCommand = (message) => {
           }
           */
 
-          const inventoryRef = userRef.child("inventory");
-          inventoryRef.update({
-            [response.data.id]: {
-              name: response.data.name,
-              image: response.data.card_images[0].image_url,
-              price: response.data.card_prices[0].tcgplayer_price,
-              type: response.data.type,
-              rarity: RARITIES[highestRarityIndex],
-            },
+            const inventoryRef = userRef.child("inventory");
+            inventoryRef.update({
+              [response.data.id]: {
+                name: response.data.name,
+                image: response.data.card_images[0].image_url,
+                price: response.data.card_prices[0].tcgplayer_price,
+                type: response.data.type,
+                rarity: RARITIES[highestRarityIndex],
+              },
+            });
           });
-        });
+      } else {
+        let timeDifferenceInMs = 60000 - timeDifference; //60000 is 1 minute
+        let timeDifferenceInSeconds = Math.round(timeDifferenceInMs / 1000);
+        message.reply(
+          "You must wait " +
+            timeDifferenceInSeconds +
+            " seconds before you can draw again."
+        );
+      }
     } else {
-      let timeDifferenceInMs = 60000 - timeDifference; //60000 is 1 minute
-      let timeDifferenceInSeconds = Math.round(timeDifferenceInMs / 1000);
-      message.reply(
-        "You must wait " +
-          timeDifferenceInSeconds +
-          " seconds before you can draw again."
-      );
+      if (Object.keys(userInventory).length - 59 == 1) {
+        message.reply(
+          "you have exceeded the deck limit. You must remove 1 card before you can draw again."
+        );
+      } else {
+        message.reply(
+          "you have exceeded the deck limit. You must remove " +
+            (Object.keys(userInventory).length - 59) +
+            " cards before you can draw again."
+        );
+      }
     }
+
     console.log(JSON.stringify(message));
     console.log(JSON.stringify(message.author));
   });
@@ -155,12 +174,18 @@ const inventoryCommand = (message) => {
     const userData = snapshot.val();
     const userIdentification = message.author.id;
     const userInventory = userData[userIdentification].inventory;
-
+    console.log(Object.keys(userInventory).length);
     const inventoryList = Object.values(userInventory).map(
       (item) => "•  " + item.name
     );
 
-    message.reply("your inventory: \n" + inventoryList.join("\n"));
+    message.reply(
+      "your inventory: \n" +
+        inventoryList.join("\n") +
+        "\n                                                                                                      Total cards:  " +
+        Object.keys(userInventory).length +
+        " / 60"
+    ); //The large spacing is to imitate text align right on discord
   });
 };
 
@@ -212,6 +237,54 @@ const lookUpCommand = (message) => {
       console.error(error);
       message.reply("sorry, the search returned no results.");
     });
+};
+
+/*
+
+  const topFiveCommand = (message) => {};
+    The user uses this command to select up to 5 cards  from their inventory to display
+    any user can use the lookup command to look at another users top 5 cards, but only the owner of cards can select which cards go into their top 5
+    
+    To input a card to your top 5, the command must be entered as !showcase blue-eyes white dragon 
+
+
+
+*/
+
+const removeCardCommand = (message) => {
+  const removeThisCard = message.content.split(" ").slice(1).join(" ");
+  var ref = db.ref("users");
+  ref.once("value", function (snapshot) {
+    const userData = snapshot.val();
+    const userIdentification = message.author.id;
+    const userInventory = userData[userIdentification].inventory;
+    const inventoryRef = ref.child(message.author.id).child("inventory");
+
+    const cardIDToRemove = Object.keys(userInventory).find(
+      (key) =>
+        userInventory[key].name.toLowerCase() === removeThisCard.toLowerCase()
+    );
+    console.log(cardIDToRemove);
+
+    if (cardIDToRemove) {
+      const deletedCardName = userInventory[cardIDToRemove].name;
+      inventoryRef
+        .child(cardIDToRemove)
+        .remove()
+        .then(() => {
+          message.reply(
+            "you have successfully removed " +
+              deletedCardName +
+              " from your deck."
+          );
+        })
+        .catch((error) => {
+          console.log("Remove failed" + error.message);
+        });
+    } else {
+      message.reply("that card is not in your deck.");
+    }
+  });
 };
 
 const app = express();
