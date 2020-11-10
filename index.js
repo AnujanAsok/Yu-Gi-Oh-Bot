@@ -3,8 +3,8 @@ const config = require("./config.js");
 const axios = require("axios");
 const Discord = require("discord.js");
 
-var admin = require("firebase-admin");
-var serviceAccount;
+const admin = require("firebase-admin");
+let serviceAccount;
 if (process.env.FIREBASE_SERVICE_ACCOUNT) {
   serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 } else {
@@ -16,7 +16,7 @@ admin.initializeApp({
   databaseURL: "https://yu-gi-oh-inventory.firebaseio.com",
 });
 
-var db = admin.database();
+const db = admin.database();
 
 const client = new Discord.Client();
 client.login(config.BOT_TOKEN);
@@ -56,11 +56,11 @@ client.on("message", function (message) {
 });
 
 const drawCommand = (message) => {
-  var ref = db.ref("users");
+  const ref = db.ref("users");
   ref.once("value", function (snapshot) {
     const userData = snapshot.val();
-    const userIdentification = message.author.id;
-    const userInventory = userData[userIdentification].inventory;
+    let userID;
+    let userInventory;
     let userDraw = message.author.id;
     let user = userData[userDraw];
     const userDoesNotExist = !user;
@@ -68,14 +68,13 @@ const drawCommand = (message) => {
     if (user) {
       let lastBotUse = user.lastDrawTime;
       timeDifference = Date.now() - lastBotUse;
-      console.log(userData);
-      console.log(lastBotUse);
-      console.log(Date.now());
-      console.log(timeDifference);
+      userID = message.author.id;
+      userInventory = userData[userID].inventory;
     }
 
+    const inventorySize = Object.keys(userInventory).length;
     //1800000 is 30 minutes in milliseconds
-    if (Object.keys(userInventory).length < 60) {
+    if (inventorySize < 60) {
       if (userDoesNotExist || timeDifference > 60000) {
         axios
           .get("https://db.ygoprodeck.com/api/v7/randomcard.php")
@@ -89,8 +88,6 @@ const drawCommand = (message) => {
                 highestRarityIndex = cardSetRarityIndex;
               }
             }
-
-            console.log(response.data);
 
             message.reply(
               "You just drew " +
@@ -107,7 +104,7 @@ const drawCommand = (message) => {
             // // message.reply(response.data.name);
             // console.log(JSON.stringify(response.data));
 
-            var ref = db.ref("users");
+            const ref = db.ref("users");
             const userRef = ref.child(message.author.id);
             userRef.update({
               lastDrawTime: Date.now(),
@@ -150,17 +147,13 @@ const drawCommand = (message) => {
         );
       }
     } else {
-      if (Object.keys(userInventory).length - 59 == 1) {
-        message.reply(
-          "you have exceeded the deck limit. You must remove 1 card before you can draw again."
-        );
-      } else {
-        message.reply(
-          "you have exceeded the deck limit. You must remove " +
-            (Object.keys(userInventory).length - 59) +
-            " cards before you can draw again."
-        );
-      }
+      const numOfCardsExceeded = inventorySize.length - 59;
+      message.reply(
+        `you have exceeded the deck limit. You must remove ${numOfCardsExceeded}
+             card ${
+               numOfCardsExceeded > 1 ? "s" : ""
+             } before you can draw again.`
+      );
     }
 
     console.log(JSON.stringify(message));
@@ -169,11 +162,11 @@ const drawCommand = (message) => {
 };
 
 const inventoryCommand = (message) => {
-  var ref = db.ref("users");
+  const ref = db.ref("users");
   ref.once("value", function (snapshot) {
     const userData = snapshot.val();
-    const userIdentification = message.author.id;
-    const userInventory = userData[userIdentification].inventory;
+    const userID = message.author.id;
+    const userInventory = userData[userID].inventory;
     console.log(Object.keys(userInventory).length);
     const inventoryList = Object.values(userInventory).map(
       (item) => "•  " + item.name
@@ -252,19 +245,18 @@ const lookUpCommand = (message) => {
 */
 
 const removeCardCommand = (message) => {
-  const removeThisCard = message.content.split(" ").slice(1).join(" ");
-  var ref = db.ref("users");
+  const cardToRemove = message.content.split(" ").slice(1).join(" ");
+  const ref = db.ref("users");
   ref.once("value", function (snapshot) {
     const userData = snapshot.val();
-    const userIdentification = message.author.id;
-    const userInventory = userData[userIdentification].inventory;
+    const userID = message.author.id;
+    const userInventory = userData[userID].inventory;
     const inventoryRef = ref.child(message.author.id).child("inventory");
 
     const cardIDToRemove = Object.keys(userInventory).find(
       (key) =>
-        userInventory[key].name.toLowerCase() === removeThisCard.toLowerCase()
+        userInventory[key].name.toLowerCase() === cardToRemove.toLowerCase()
     );
-    console.log(cardIDToRemove);
 
     if (cardIDToRemove) {
       const deletedCardName = userInventory[cardIDToRemove].name;
