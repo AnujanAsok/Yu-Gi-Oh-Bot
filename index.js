@@ -68,9 +68,9 @@ const drawCommand = (message) => {
       timeDifference = Date.now() - lastBotUse;
       const userInventory = userData[userID].inventory;
       const inventorySize = Object.keys(userInventory).length;
-      const maxNumOfCards = 60;
-      if (inventorySize >= maxNumOfCards) {
-        const numOfCardsExceeded = inventorySize - (maxNumOfCards - 1);
+      const DECK_SIZE = 60;
+      if (inventorySize >= DECK_SIZE) {
+        const numOfCardsExceeded = inventorySize - (DECK_SIZE - 1);
         message.reply(
           `you have exceeded the deck limit. You must remove ${numOfCardsExceeded} card${
             numOfCardsExceeded > 1 ? "s" : ""
@@ -162,7 +162,8 @@ const inventoryCommand = (message) => {
     const userData = snapshot.val();
     const userID = message.author.id;
     const userInventory = userData[userID].inventory;
-    console.log(Object.keys(userInventory).length);
+    const inventorySize = Object.keys(userInventory).length;
+    console.log(inventorySize);
     const inventoryList = Object.values(userInventory).map(
       (item) => "•  " + item.name
     );
@@ -171,7 +172,7 @@ const inventoryCommand = (message) => {
       "your inventory: \n" +
         inventoryList.join("\n") +
         "\n                                                                                                      Total cards:  " +
-        Object.keys(userInventory).length +
+        inventorySize +
         " / 60"
     ); //The large spacing is to imitate text align right on discord
   });
