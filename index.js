@@ -59,59 +59,63 @@ const drawCommand = (message) => {
   const ref = db.ref("users");
   ref.once("value", function (snapshot) {
     const userData = snapshot.val();
-    let userID;
-    let userInventory;
-    let userDraw = message.author.id;
-    let user = userData[userDraw];
+    const userID = message.author.id;
+    const user = userData[userID];
     const userDoesNotExist = !user;
     let timeDifference;
     if (user) {
       let lastBotUse = user.lastDrawTime;
       timeDifference = Date.now() - lastBotUse;
-      userID = message.author.id;
-      userInventory = userData[userID].inventory;
+      const userInventory = userData[userID].inventory;
+      const inventorySize = Object.keys(userInventory).length;
+
+      if (inventorySize >= 60) {
+        const numOfCardsExceeded = inventorySize - 59;
+        message.reply(
+          `you have exceeded the deck limit. You must remove ${numOfCardsExceeded} card${
+            numOfCardsExceeded > 1 ? "s" : ""
+          } before you can draw again.`
+        );
+        return;
+      }
     }
 
-    const inventorySize = Object.keys(userInventory).length;
     //1800000 is 30 minutes in milliseconds
-    if (inventorySize < 60) {
-      if (userDoesNotExist || timeDifference > 60000) {
-        axios
-          .get("https://db.ygoprodeck.com/api/v7/randomcard.php")
-          .then(function (response) {
-            let highestRarityIndex = 0;
-            let card = response.data;
-            for (let i = 0; i < card.card_sets.length; i++) {
-              let cardSetRarity = card.card_sets[i].set_rarity;
-              let cardSetRarityIndex = RARITIES.indexOf(cardSetRarity);
-              if (highestRarityIndex < cardSetRarityIndex) {
-                highestRarityIndex = cardSetRarityIndex;
-              }
+    if (userDoesNotExist || timeDifference > 60000) {
+      axios
+        .get("https://db.ygoprodeck.com/api/v7/randomcard.php")
+        .then(function (response) {
+          let highestRarityIndex = 0;
+          let card = response.data;
+          for (let i = 0; i < card.card_sets.length; i++) {
+            let cardSetRarity = card.card_sets[i].set_rarity;
+            let cardSetRarityIndex = RARITIES.indexOf(cardSetRarity);
+            if (highestRarityIndex < cardSetRarityIndex) {
+              highestRarityIndex = cardSetRarityIndex;
             }
+          }
 
-            message.reply(
-              "You just drew " +
-                response.data.name +
-                ", a " +
-                RARITIES[highestRarityIndex] +
-                " card"
-            );
-            const attachment = new Discord.MessageAttachment(
-              response.data.card_images[0].image_url
-            );
-            // Send the attachment in the message channel
-            message.channel.send(attachment);
-            // // message.reply(response.data.name);
-            // console.log(JSON.stringify(response.data));
+          message.reply(
+            "You just drew " +
+              response.data.name +
+              ", a " +
+              RARITIES[highestRarityIndex] +
+              " card"
+          );
+          const attachment = new Discord.MessageAttachment(
+            response.data.card_images[0].image_url
+          );
 
-            const ref = db.ref("users");
-            const userRef = ref.child(message.author.id);
-            userRef.update({
-              lastDrawTime: Date.now(),
-              name: message.author.username,
-            });
+          message.channel.send(attachment);
 
-            /* 
+          const ref = db.ref("users");
+          const userRef = ref.child(message.author.id);
+          userRef.update({
+            lastDrawTime: Date.now(),
+            name: message.author.username,
+          });
+
+          /* 
           if user draws a card
           store name of card to firebase under the key cardName
           when the same user draws a second card, store the name of the second card under the previous draw within cardName
@@ -126,33 +130,24 @@ const drawCommand = (message) => {
           }
           */
 
-            const inventoryRef = userRef.child("inventory");
-            inventoryRef.update({
-              [response.data.id]: {
-                name: response.data.name,
-                image: response.data.card_images[0].image_url,
-                price: response.data.card_prices[0].tcgplayer_price,
-                type: response.data.type,
-                rarity: RARITIES[highestRarityIndex],
-              },
-            });
+          const inventoryRef = userRef.child("inventory");
+          inventoryRef.update({
+            [response.data.id]: {
+              name: response.data.name,
+              image: response.data.card_images[0].image_url,
+              price: response.data.card_prices[0].tcgplayer_price,
+              type: response.data.type,
+              rarity: RARITIES[highestRarityIndex],
+            },
           });
-      } else {
-        let timeDifferenceInMs = 60000 - timeDifference; //60000 is 1 minute
-        let timeDifferenceInSeconds = Math.round(timeDifferenceInMs / 1000);
-        message.reply(
-          "You must wait " +
-            timeDifferenceInSeconds +
-            " seconds before you can draw again."
-        );
-      }
+        });
     } else {
-      const numOfCardsExceeded = inventorySize.length - 59;
+      const timeDifferenceInMs = 60000 - timeDifference; //60000 is 1 minute
+      const timeDifferenceInSeconds = Math.round(timeDifferenceInMs / 1000);
       message.reply(
-        `you have exceeded the deck limit. You must remove ${numOfCardsExceeded}
-             card ${
-               numOfCardsExceeded > 1 ? "s" : ""
-             } before you can draw again.`
+        "You must wait " +
+          timeDifferenceInSeconds +
+          " seconds before you can draw again."
       );
     }
 
@@ -251,7 +246,7 @@ const removeCardCommand = (message) => {
     const userData = snapshot.val();
     const userID = message.author.id;
     const userInventory = userData[userID].inventory;
-    const inventoryRef = ref.child(message.author.id).child("inventory");
+    const inventoryRef = ref.child(userID).child("inventory");
 
     const cardIDToRemove = Object.keys(userInventory).find(
       (key) =>
