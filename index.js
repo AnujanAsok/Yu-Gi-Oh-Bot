@@ -68,9 +68,9 @@ const drawCommand = (message) => {
       timeDifference = Date.now() - lastBotUse;
       const userInventory = userData[userID].inventory;
       const inventorySize = Object.keys(userInventory).length;
-
-      if (inventorySize >= 60) {
-        const numOfCardsExceeded = inventorySize - 59;
+      const maxNumOfCards = 60;
+      if (inventorySize >= maxNumOfCards) {
+        const numOfCardsExceeded = inventorySize - (maxNumOfCards - 1);
         message.reply(
           `you have exceeded the deck limit. You must remove ${numOfCardsExceeded} card${
             numOfCardsExceeded > 1 ? "s" : ""
@@ -246,7 +246,6 @@ const removeCardCommand = (message) => {
     const userData = snapshot.val();
     const userID = message.author.id;
     const userInventory = userData[userID].inventory;
-    const inventoryRef = ref.child(userID).child("inventory");
 
     const cardIDToRemove = Object.keys(userInventory).find(
       (key) =>
@@ -255,6 +254,7 @@ const removeCardCommand = (message) => {
 
     if (cardIDToRemove) {
       const deletedCardName = userInventory[cardIDToRemove].name;
+      const inventoryRef = ref.child(userID).child("inventory");
       inventoryRef
         .child(cardIDToRemove)
         .remove()
