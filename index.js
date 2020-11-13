@@ -3,8 +3,8 @@ const config = require("./config.js");
 const axios = require("axios");
 const Discord = require("discord.js");
 
-var admin = require("firebase-admin");
-var serviceAccount;
+const admin = require("firebase-admin");
+let serviceAccount;
 if (process.env.FIREBASE_SERVICE_ACCOUNT) {
   serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 } else {
@@ -16,7 +16,7 @@ admin.initializeApp({
   databaseURL: "https://yu-gi-oh-inventory.firebaseio.com",
 });
 
-var db = admin.database();
+const db = admin.database();
 
 const client = new Discord.Client();
 client.login(config.BOT_TOKEN);
@@ -40,6 +40,7 @@ const RARITIES = [
   "Ghost Rare",
   "Gold Ultra Rare",
 ];
+
 client.on("message", function (message) {
   if (message.author.bot) return;
 
@@ -49,28 +50,37 @@ client.on("message", function (message) {
     inventoryCommand(message);
   } else if (message.content.startsWith("!lookup")) {
     lookUpCommand(message);
+  } else if (message.content.startsWith("!remove")) {
+    removeCardCommand(message);
   }
 });
 
 const drawCommand = (message) => {
-  var ref = db.ref("users");
+  const ref = db.ref("users");
   ref.once("value", function (snapshot) {
     const userData = snapshot.val();
-    let userDraw = message.author.id;
-    let user = userData[userDraw];
+    const userID = message.author.id;
+    const user = userData[userID];
     const userDoesNotExist = !user;
     let timeDifference;
     if (user) {
       let lastBotUse = user.lastDrawTime;
       timeDifference = Date.now() - lastBotUse;
-      console.log(userData);
-      console.log(lastBotUse);
-      console.log(Date.now());
-      console.log(timeDifference);
+      const userInventory = userData[userID].inventory;
+      const inventorySize = Object.keys(userInventory).length;
+      const DECK_SIZE = 60;
+      if (inventorySize >= DECK_SIZE) {
+        const numOfCardsExceeded = inventorySize - (DECK_SIZE - 1);
+        message.reply(
+          `you have exceeded the deck limit. You must remove ${numOfCardsExceeded} card${
+            numOfCardsExceeded > 1 ? "s" : ""
+          } before you can draw again.`
+        );
+        return;
+      }
     }
 
     //1800000 is 30 minutes in milliseconds
-
     if (userDoesNotExist || timeDifference > 60000) {
       axios
         .get("https://db.ygoprodeck.com/api/v7/randomcard.php")
@@ -85,8 +95,6 @@ const drawCommand = (message) => {
             }
           }
 
-          console.log(response.data);
-
           message.reply(
             "You just drew " +
               response.data.name +
@@ -97,12 +105,10 @@ const drawCommand = (message) => {
           const attachment = new Discord.MessageAttachment(
             response.data.card_images[0].image_url
           );
-          // Send the attachment in the message channel
-          message.channel.send(attachment);
-          // // message.reply(response.data.name);
-          // console.log(JSON.stringify(response.data));
 
-          var ref = db.ref("users");
+          message.channel.send(attachment);
+
+          const ref = db.ref("users");
           const userRef = ref.child(message.author.id);
           userRef.update({
             lastDrawTime: Date.now(),
@@ -136,31 +142,39 @@ const drawCommand = (message) => {
           });
         });
     } else {
-      let timeDifferenceInMs = 60000 - timeDifference; //60000 is 1 minute
-      let timeDifferenceInSeconds = Math.round(timeDifferenceInMs / 1000);
+      const timeDifferenceInMs = 60000 - timeDifference; //60000 is 1 minute
+      const timeDifferenceInSeconds = Math.round(timeDifferenceInMs / 1000);
       message.reply(
         "You must wait " +
           timeDifferenceInSeconds +
           " seconds before you can draw again."
       );
     }
+
     console.log(JSON.stringify(message));
     console.log(JSON.stringify(message.author));
   });
 };
 
 const inventoryCommand = (message) => {
-  var ref = db.ref("users");
+  const ref = db.ref("users");
   ref.once("value", function (snapshot) {
     const userData = snapshot.val();
-    const userIdentification = message.author.id;
-    const userInventory = userData[userIdentification].inventory;
-
+    const userID = message.author.id;
+    const userInventory = userData[userID].inventory;
+    const inventorySize = Object.keys(userInventory).length;
+    console.log(inventorySize);
     const inventoryList = Object.values(userInventory).map(
       (item) => "•  " + item.name
     );
 
-    message.reply("your inventory: \n" + inventoryList.join("\n"));
+    message.reply(
+      "your inventory: \n" +
+        inventoryList.join("\n") +
+        "\n                                                                                                      Total cards:  " +
+        inventorySize +
+        " / 60"
+    ); //The large spacing is to imitate text align right on discord
   });
 };
 
@@ -212,6 +226,53 @@ const lookUpCommand = (message) => {
       console.error(error);
       message.reply("sorry, the search returned no results.");
     });
+};
+
+/*
+
+  const topFiveCommand = (message) => {};
+    The user uses this command to select up to 5 cards  from their inventory to display
+    any user can use the lookup command to look at another users top 5 cards, but only the owner of cards can select which cards go into their top 5
+    
+    To input a card to your top 5, the command must be entered as !showcase blue-eyes white dragon 
+
+
+
+*/
+
+const removeCardCommand = (message) => {
+  const cardToRemove = message.content.split(" ").slice(1).join(" ");
+  const ref = db.ref("users");
+  ref.once("value", function (snapshot) {
+    const userData = snapshot.val();
+    const userID = message.author.id;
+    const userInventory = userData[userID].inventory;
+
+    const cardIDToRemove = Object.keys(userInventory).find(
+      (key) =>
+        userInventory[key].name.toLowerCase() === cardToRemove.toLowerCase()
+    );
+
+    if (cardIDToRemove) {
+      const deletedCardName = userInventory[cardIDToRemove].name;
+      const inventoryRef = ref.child(userID).child("inventory");
+      inventoryRef
+        .child(cardIDToRemove)
+        .remove()
+        .then(() => {
+          message.reply(
+            "you have successfully removed " +
+              deletedCardName +
+              " from your deck."
+          );
+        })
+        .catch((error) => {
+          console.log("Remove failed" + error.message);
+        });
+    } else {
+      message.reply("that card is not in your deck.");
+    }
+  });
 };
 
 const app = express();
