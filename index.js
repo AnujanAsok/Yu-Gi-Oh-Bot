@@ -5,6 +5,7 @@ import drawCommand from "./drawCommand.js";
 import inventoryCommand from "./inventoryCommand.js";
 import lookUpCommand from "./lookupCommand.js";
 import removeCardCommand from "./removeCardCommand.js";
+import helpCommand from "./helpCommand.js";
 
 const client = new Discord.Client();
 client.login(BOT_TOKEN);
@@ -20,6 +21,8 @@ client.on("message", function (message) {
     lookUpCommand(message);
   } else if (message.content.startsWith("!remove")) {
     removeCardCommand(message);
+  } else if (message.content.startsWith("!help")) {
+    helpCommand(message);
   }
 });
 
