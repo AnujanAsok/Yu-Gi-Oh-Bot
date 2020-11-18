@@ -1,4 +1,4 @@
-import db from "./database.js";
+import db from "../db.js";
 const removeCardCommand = (message) => {
   const cardToRemove = message.content.split(" ").slice(1).join(" ");
   const ref = db.ref("users");

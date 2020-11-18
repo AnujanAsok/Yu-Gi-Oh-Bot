@@ -1,11 +1,11 @@
 import { BOT_TOKEN } from "./config.js";
 import express from "express";
 import Discord from "discord.js";
-import drawCommand from "./drawCommand.js";
-import inventoryCommand from "./inventoryCommand.js";
-import lookUpCommand from "./lookupCommand.js";
-import removeCardCommand from "./removeCardCommand.js";
-import helpCommand from "./helpCommand.js";
+import drawCommand from "./commands/drawCommand.js";
+import inventoryCommand from "./commands/inventoryCommand.js";
+import lookUpCommand from "./commands/lookupCommand.js";
+import removeCardCommand from "./commands/removeCardCommand.js";
+import helpCommand from "./commands/helpCommand.js";
 
 const client = new Discord.Client();
 client.login(BOT_TOKEN);

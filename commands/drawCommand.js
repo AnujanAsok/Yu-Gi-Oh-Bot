@@ -1,4 +1,4 @@
-import db from "./database.js";
+import db from "../db.js";
 import axios from "axios";
 import { MessageAttachment } from "discord.js";
 
