@@ -1,6 +1,6 @@
-import db from "../db.js";
 import axios from "axios";
 import { MessageAttachment } from "discord.js";
+import db from "../db.js";
 
 export const RARITIES = [
   "Common",
@@ -24,14 +24,14 @@ export const RARITIES = [
 
 const drawCommand = (message) => {
   const ref = db.ref("users");
-  ref.once("value", function (snapshot) {
+  ref.once("value", (snapshot) => {
     const userData = snapshot.val();
     const userID = message.author.id;
     const user = userData[userID];
     const userDoesNotExist = !user;
     let timeDifference;
     if (user) {
-      let lastBotUse = user.lastDrawTime;
+      const lastBotUse = user.lastDrawTime;
       timeDifference = Date.now() - lastBotUse;
       const userInventory = userData[userID].inventory;
       const inventorySize = Object.keys(userInventory).length;
@@ -47,27 +47,24 @@ const drawCommand = (message) => {
       }
     }
 
-    //1800000 is 30 minutes in milliseconds
+    // 1800000 is 30 minutes in milliseconds
     if (userDoesNotExist || timeDifference > 60000) {
       axios
         .get("https://db.ygoprodeck.com/api/v7/randomcard.php")
-        .then(function (response) {
+        .then((response) => {
           let highestRarityIndex = 0;
-          let card = response.data;
+          const card = response.data;
+          // eslint-disable-next-line no-plusplus
           for (let i = 0; i < card.card_sets.length; i++) {
-            let cardSetRarity = card.card_sets[i].set_rarity;
-            let cardSetRarityIndex = RARITIES.indexOf(cardSetRarity);
+            const cardSetRarity = card.card_sets[i].set_rarity;
+            const cardSetRarityIndex = RARITIES.indexOf(cardSetRarity);
             if (highestRarityIndex < cardSetRarityIndex) {
               highestRarityIndex = cardSetRarityIndex;
             }
           }
 
           message.reply(
-            "You just drew " +
-              response.data.name +
-              ", a " +
-              RARITIES[highestRarityIndex] +
-              " card"
+            `You just drew ${response.data.name}, a ${RARITIES[highestRarityIndex]} card`
           );
           const attachment = new MessageAttachment(
             response.data.card_images[0].image_url
@@ -75,6 +72,7 @@ const drawCommand = (message) => {
 
           message.channel.send(attachment);
 
+          // eslint-disable-next-line no-shadow
           const ref = db.ref("users");
           const userRef = ref.child(message.author.id);
           userRef.update({
@@ -82,12 +80,13 @@ const drawCommand = (message) => {
             name: message.author.username,
           });
 
-          /* 
+          /*
             if user draws a card
             store name of card to firebase under the key cardName
-            when the same user draws a second card, store the name of the second card under the previous draw within cardName
+            when the same user draws a second card, store the name of the second card under
+             the previous draw within cardName
             continue to do this to all additional cards
-            
+
             user{
               userID{
                 lastDrawTime: xxxx
@@ -109,12 +108,10 @@ const drawCommand = (message) => {
           });
         });
     } else {
-      const timeDifferenceInMs = 60000 - timeDifference; //60000 is 1 minute
+      const timeDifferenceInMs = 60000 - timeDifference; // 60000 is 1 minute
       const timeDifferenceInSeconds = Math.round(timeDifferenceInMs / 1000);
       message.reply(
-        "You must wait " +
-          timeDifferenceInSeconds +
-          " seconds before you can draw again."
+        `You must wait ${timeDifferenceInSeconds} seconds before you can draw again.`
       );
     }
 
