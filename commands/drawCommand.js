@@ -53,15 +53,15 @@ const drawCommand = (message) => {
         .get("https://db.ygoprodeck.com/api/v7/randomcard.php")
         .then((response) => {
           let highestRarityIndex = 0;
-          const card = response.data;
-          // eslint-disable-next-line no-plusplus
-          for (let i = 0; i < card.card_sets.length; i++) {
-            const cardSetRarity = card.card_sets[i].set_rarity;
+          const card = response.data.card_sets;
+
+          card.forEach((element) => {
+            const cardSetRarity = element.set_rarity;
             const cardSetRarityIndex = RARITIES.indexOf(cardSetRarity);
             if (highestRarityIndex < cardSetRarityIndex) {
               highestRarityIndex = cardSetRarityIndex;
             }
-          }
+          });
 
           message.reply(
             `You just drew ${response.data.name}, a ${RARITIES[highestRarityIndex]} card`
@@ -72,7 +72,6 @@ const drawCommand = (message) => {
 
           message.channel.send(attachment);
 
-          // eslint-disable-next-line no-shadow
           const ref = db.ref("users");
           const userRef = ref.child(message.author.id);
           userRef.update({

@@ -15,7 +15,6 @@ const lookUpCommand = (message) => {
         (element) => element.name.toLowerCase() === fuzzySearchKey.toLowerCase()
       );
 
-      // eslint-disable-next-line max-len
       const closestMatchCard = cardDataObjects.find((element) =>
         element.name.toLowerCase().startsWith(fuzzySearchKey.toLowerCase())
       );
