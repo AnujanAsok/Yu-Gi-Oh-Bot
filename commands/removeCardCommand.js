@@ -1,9 +1,9 @@
 import db from "../db.js";
 
 const removeCardCommand = async (message) => {
-  const cardToRemove = message.content.split(" ").slice(1).join(" ");
-  const ref = db.ref(`users/${message.author.id}`);
-  const snapshot = await ref.once("value");
+  const cardToRemove = message.content.split(" ").slice(1).join(" ").trim();
+  const userRef = db.ref(`users/${message.author.id}`);
+  const snapshot = await userRef.once("value");
   const userData = snapshot.val();
   const userInventory = userData.inventory;
 
@@ -14,7 +14,7 @@ const removeCardCommand = async (message) => {
 
   if (cardIDToRemove) {
     const deletedCard = userInventory[cardIDToRemove];
-    const inventoryRef = ref.child("inventory");
+    const inventoryRef = userRef.child("inventory");
 
     const saleMessage = await message.reply(
       `Do you want to sell ${deletedCard.name} for $${deletedCard.price}?`
@@ -40,14 +40,13 @@ const removeCardCommand = async (message) => {
     if (reaction.emoji.name === "☑️") {
       const oldCurrency = userData.currency || 0;
       const newCurrency = parseFloat(deletedCard.price) + oldCurrency;
-      const ref = db.ref(`users/${message.author.id}`);
-      ref.update({
+      userRef.update({
         currency: newCurrency,
       });
       try {
         await inventoryRef.child(cardIDToRemove).remove();
         await saleMessage.edit(
-          `you have successfully removed ${deletedCard.name} from your deck.`
+          `You have successfully removed ${deletedCard.name} from your deck.`
         );
         await saleMessage.reactions.removeAll();
       } catch (error) {
@@ -55,7 +54,7 @@ const removeCardCommand = async (message) => {
       }
     } else if (reaction.emoji.name === "🚫") {
       try {
-        await saleMessage.edit(`${deletedCard.name} was not sold`);
+        await saleMessage.edit(`${deletedCard.name} was not sold.`);
         await saleMessage.reactions.removeAll();
       } catch (error) {
         console.error("failed to remove reactions: ", error);

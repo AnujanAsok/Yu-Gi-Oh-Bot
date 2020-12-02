@@ -112,9 +112,6 @@ const drawCommand = async (message) => {
       `You must wait ${timeDifferenceInSeconds} seconds before you can draw again.`
     );
   }
-
-  console.log(JSON.stringify(message));
-  console.log(JSON.stringify(message.author));
 };
 
 export default drawCommand;
