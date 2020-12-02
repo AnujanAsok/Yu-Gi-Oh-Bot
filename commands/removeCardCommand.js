@@ -2,11 +2,10 @@ import db from "../db.js";
 
 const removeCardCommand = async (message) => {
   const cardToRemove = message.content.split(" ").slice(1).join(" ");
-  const ref = db.ref("users");
+  const ref = db.ref(`users/${message.author.id}`);
   const snapshot = await ref.once("value");
   const userData = snapshot.val();
-  const userID = message.author.id;
-  const userInventory = userData[userID].inventory;
+  const userInventory = userData.inventory;
 
   const cardIDToRemove = Object.keys(userInventory).find(
     (key) =>
@@ -14,13 +13,11 @@ const removeCardCommand = async (message) => {
   );
 
   if (cardIDToRemove) {
-    const deletedCardObject = userInventory[cardIDToRemove];
-    const deletedCardName = deletedCardObject.name;
-    const deletedCardPrice = deletedCardObject.price;
-    const inventoryRef = ref.child(userID).child("inventory");
+    const deletedCard = userInventory[cardIDToRemove];
+    const inventoryRef = ref.child("inventory");
 
     const saleMessage = await message.reply(
-      `Do you want to sell ${deletedCardName} for $${deletedCardPrice}?`
+      `Do you want to sell ${deletedCard.name} for $${deletedCard.price}?`
     );
 
     await saleMessage.react("☑️");
@@ -41,33 +38,28 @@ const removeCardCommand = async (message) => {
     const reaction = collected.first();
 
     if (reaction.emoji.name === "☑️") {
-      console.log("check box selected");
-      const oldCurrency = userData[userID].currency || 0;
-      const newCurrency = parseFloat(deletedCardObject.price) + oldCurrency;
-      console.log(newCurrency);
-      const ref = db.ref("users");
-      const userRef = ref.child(message.author.id);
-      userRef.update({
+      const oldCurrency = userData.currency || 0;
+      const newCurrency = parseFloat(deletedCard.price) + oldCurrency;
+      const ref = db.ref(`users/${message.author.id}`);
+      ref.update({
         currency: newCurrency,
       });
       try {
         await inventoryRef.child(cardIDToRemove).remove();
         await saleMessage.edit(
-          `you have successfully removed ${deletedCardName} from your deck.`
+          `you have successfully removed ${deletedCard.name} from your deck.`
         );
-        await saleMessage.reactions
-          .removeAll()
-          .catch((error) =>
-            console.error("failed to remove reactions: ", error)
-          );
+        await saleMessage.reactions.removeAll();
       } catch (error) {
         console.log(`Remove failed${error.message}`);
       }
     } else if (reaction.emoji.name === "🚫") {
-      await saleMessage.edit(`${deletedCardName} was not sold`);
-      await saleMessage.reactions
-        .removeAll()
-        .catch((error) => console.error("failed to remove reactions: ", error));
+      try {
+        await saleMessage.edit(`${deletedCard.name} was not sold`);
+        await saleMessage.reactions.removeAll();
+      } catch (error) {
+        console.error("failed to remove reactions: ", error);
+      }
     }
   } else {
     message.reply("that card is not in your deck.");
