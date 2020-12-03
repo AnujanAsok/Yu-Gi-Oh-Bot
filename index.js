@@ -4,7 +4,7 @@ import BOT_TOKEN from "./config.js";
 import drawCommand from "./commands/drawCommand.js";
 import inventoryCommand from "./commands/inventoryCommand.js";
 import lookUpCommand from "./commands/lookupCommand.js";
-import removeCardCommand from "./commands/removeCardCommand.js";
+import sellCardCommand from "./commands/sellCardCommand.js";
 import helpCommand from "./commands/helpCommand.js";
 
 const client = new Discord.Client();
@@ -19,10 +19,12 @@ client.on("message", (message) => {
     inventoryCommand(message);
   } else if (message.content.startsWith("!lookup")) {
     lookUpCommand(message);
-  } else if (message.content.startsWith("!remove")) {
-    removeCardCommand(message);
+  } else if (message.content.startsWith("!sell")) {
+    sellCardCommand(message);
   } else if (message.content.startsWith("!help")) {
     helpCommand(message);
+  } else if (message.content.startsWith("!remove")) {
+    message.reply("!remove is not a command anymore, did you mean !sell?"); // I added this as a temporary measure to help beta testers get used to the change in command from !remove to !sell, will remove this in a few days
   }
 });
 
