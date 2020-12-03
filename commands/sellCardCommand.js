@@ -1,6 +1,6 @@
 import db from "../db.js";
 
-const removeCardCommand = async (message) => {
+const sellCardCommand = async (message) => {
   const cardToRemove = message.content.split(" ").slice(1).join(" ").trim();
   const userRef = db.ref(`users/${message.author.id}`);
   const snapshot = await userRef.once("value");
@@ -65,4 +65,4 @@ const removeCardCommand = async (message) => {
   }
 };
 
-export default removeCardCommand;
+export default sellCardCommand;
