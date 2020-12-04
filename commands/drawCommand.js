@@ -2,7 +2,9 @@ import axios from "axios";
 import { MessageAttachment } from "discord.js";
 import db from "../db.js";
 
-export const RARITIES = [
+let timeDifference;
+const DRAW_WAIT_TIME = 600000; // 600000 is 10 minutes in milliseconds
+const RARITIES = [
   "Common",
   "Rare",
   "Super Rare",
@@ -22,6 +24,90 @@ export const RARITIES = [
   "Gold Ultra Rare",
 ];
 
+const storingDraws = async (message) => {
+  const response = await axios.get(
+    "https://db.ygoprodeck.com/api/v7/randomcard.php"
+  );
+  let highestRarityIndex = 0;
+  const card = response.data.card_sets;
+
+  card.forEach((element) => {
+    const cardSetRarity = element.set_rarity;
+    const cardSetRarityIndex = RARITIES.indexOf(cardSetRarity);
+    if (highestRarityIndex < cardSetRarityIndex) {
+      highestRarityIndex = cardSetRarityIndex;
+    }
+  });
+
+  message.reply(
+    `You just drew ${response.data.name}, a ${RARITIES[highestRarityIndex]} card`
+  );
+  const attachment = new MessageAttachment(
+    response.data.card_images[0].image_url
+  );
+
+  message.channel.send(attachment);
+
+  const ref = db.ref("users");
+  const userRef = ref.child(message.author.id);
+  userRef.update({
+    lastDrawTime: Date.now(),
+    name: message.author.username,
+  });
+
+  const inventoryRef = userRef.child("inventory");
+  inventoryRef.update({
+    [response.data.id]: {
+      name: response.data.name,
+      image: response.data.card_images[0].image_url,
+      price: response.data.card_prices[0].tcgplayer_price,
+      type: response.data.type,
+      rarity: RARITIES[highestRarityIndex],
+    },
+  });
+};
+
+const payForDraw = async (message) => {
+  const userRef = db.ref(`users/${message.author.id}`);
+  const snapshot = await userRef.once("value");
+  const userData = snapshot.val();
+  const buyADrawMessage = message.reply(
+    "you can pay $1.50 to draw a card instead of waiting for the time limit. Would you like to buy a draw?"
+  );
+  await buyADrawMessage.react("💵");
+  await buyADrawMessage.react("🚫");
+
+  const filter = (reaction, user) => {
+    return (
+      ["💵", "🚫"].includes(reaction.emoji.name) &&
+      user.id === message.author.id
+    );
+  };
+
+  const collected = await buyADrawMessage.awaitReactions(filter, {
+    max: 1,
+    time: 60000,
+    errors: [],
+  });
+  const reaction = collected.first();
+  if (reaction.emoji.name === "💵") {
+    const updatedCurrency = userData.currency - 1.5;
+    userRef.update({ currency: updatedCurrency });
+    storingDraws(message);
+  } else if (reaction.emoji.name === "🚫") {
+    const timeDifferenceInMs = DRAW_WAIT_TIME - timeDifference;
+    const timeDifferenceInSeconds = Math.round(timeDifferenceInMs / 1000);
+    const timeDifferenceInMinutes = Math.round(timeDifferenceInMs / 60000);
+    message.reply(
+      `funds were not deducted from your account. You must wait ${
+        timeDifferenceInMs >= 60000
+          ? `${timeDifferenceInMinutes} minutes`
+          : `${timeDifferenceInSeconds} seconds`
+      } for your free draw.`
+    );
+  }
+};
+
 const drawCommand = async (message) => {
   const ref = db.ref("users");
   const snapshot = await ref.once("value");
@@ -29,7 +115,10 @@ const drawCommand = async (message) => {
   const userID = message.author.id;
   const user = userData[userID];
   const userDoesNotExist = !user;
-  let timeDifference;
+  const COST_OF_DRAW = 1.5;
+  const money = Object.values(user).map((item) => item.currency); // the pay for draw method does not work because the money variable returns an array with 4 undefined elements
+  console.log(money);
+  console.log(user.currency);
   if (user) {
     const lastBotUse = user.lastDrawTime;
     timeDifference = Date.now() - lastBotUse;
@@ -48,68 +137,20 @@ const drawCommand = async (message) => {
   }
 
   // 1800000 is 30 minutes in milliseconds
-  if (userDoesNotExist || timeDifference > 60000) {
-    const response = await axios.get(
-      "https://db.ygoprodeck.com/api/v7/randomcard.php"
-    );
-    let highestRarityIndex = 0;
-    const card = response.data.card_sets;
-
-    card.forEach((element) => {
-      const cardSetRarity = element.set_rarity;
-      const cardSetRarityIndex = RARITIES.indexOf(cardSetRarity);
-      if (highestRarityIndex < cardSetRarityIndex) {
-        highestRarityIndex = cardSetRarityIndex;
-      }
-    });
-
-    message.reply(
-      `You just drew ${response.data.name}, a ${RARITIES[highestRarityIndex]} card`
-    );
-    const attachment = new MessageAttachment(
-      response.data.card_images[0].image_url
-    );
-
-    message.channel.send(attachment);
-
-    const ref = db.ref("users");
-    const userRef = ref.child(message.author.id);
-    userRef.update({
-      lastDrawTime: Date.now(),
-      name: message.author.username,
-    });
-
-    /*
-            if user draws a card
-            store name of card to firebase under the key cardName
-            when the same user draws a second card, store the name of the second card under
-             the previous draw within cardName
-            continue to do this to all additional cards
-
-            user{
-              userID{
-                lastDrawTime: xxxx
-                username: ""
-                cardName: "Blue Eyes White Dragon", "Red Eyes Black Dragon"
-              }
-            }
-            */
-
-    const inventoryRef = userRef.child("inventory");
-    inventoryRef.update({
-      [response.data.id]: {
-        name: response.data.name,
-        image: response.data.card_images[0].image_url,
-        price: response.data.card_prices[0].tcgplayer_price,
-        type: response.data.type,
-        rarity: RARITIES[highestRarityIndex],
-      },
-    });
+  if (userDoesNotExist || timeDifference > DRAW_WAIT_TIME) {
+    await storingDraws(message);
+  } else if (money >= COST_OF_DRAW) {
+    await payForDraw(message);
   } else {
-    const timeDifferenceInMs = 60000 - timeDifference; // 60000 is 1 minute
+    const timeDifferenceInMs = DRAW_WAIT_TIME - timeDifference; // 60000 is 1 minute
     const timeDifferenceInSeconds = Math.round(timeDifferenceInMs / 1000);
+    const timeDifferenceInMinutes = Math.round(timeDifferenceInMs / 60000);
     message.reply(
-      `You must wait ${timeDifferenceInSeconds} seconds before you can draw again.`
+      `you must wait ${
+        timeDifferenceInMs >= 60000
+          ? `${timeDifferenceInMinutes} minutes`
+          : `${timeDifferenceInSeconds} seconds`
+      } before you can draw again.`
     );
   }
 };
