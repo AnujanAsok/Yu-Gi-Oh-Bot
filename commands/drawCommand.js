@@ -4,6 +4,7 @@ import db from "../db.js";
 
 let timeDifference;
 const DRAW_WAIT_TIME = 600000; // 600000 is 10 minutes in milliseconds
+const COST_OF_DRAW = 1.5;
 const RARITIES = [
   "Common",
   "Rare",
@@ -71,8 +72,8 @@ const payForDraw = async (message) => {
   const userRef = db.ref(`users/${message.author.id}`);
   const snapshot = await userRef.once("value");
   const userData = snapshot.val();
-  const buyADrawMessage = message.reply(
-    "you can pay $1.50 to draw a card instead of waiting for the time limit. Would you like to buy a draw?"
+  const buyADrawMessage = await message.reply(
+    `you can pay $1.50 to draw a card instead of waiting for the time limit. Would you like to buy a draw?`
   );
   await buyADrawMessage.react("💵");
   await buyADrawMessage.react("🚫");
@@ -90,21 +91,24 @@ const payForDraw = async (message) => {
     errors: [],
   });
   const reaction = collected.first();
+
   if (reaction.emoji.name === "💵") {
-    const updatedCurrency = userData.currency - 1.5;
+    const updatedCurrency = userData.currency - COST_OF_DRAW;
     userRef.update({ currency: updatedCurrency });
     storingDraws(message);
+    await buyADrawMessage.delete({ timeout: 1250 });
   } else if (reaction.emoji.name === "🚫") {
     const timeDifferenceInMs = DRAW_WAIT_TIME - timeDifference;
     const timeDifferenceInSeconds = Math.round(timeDifferenceInMs / 1000);
     const timeDifferenceInMinutes = Math.round(timeDifferenceInMs / 60000);
-    message.reply(
-      `funds were not deducted from your account. You must wait ${
+    buyADrawMessage.edit(
+      `Funds were not deducted from your account. You must wait ${
         timeDifferenceInMs >= 60000
           ? `${timeDifferenceInMinutes} minutes`
           : `${timeDifferenceInSeconds} seconds`
       } for your free draw.`
     );
+    await buyADrawMessage.reactions.removeAll();
   }
 };
 
@@ -115,10 +119,7 @@ const drawCommand = async (message) => {
   const userID = message.author.id;
   const user = userData[userID];
   const userDoesNotExist = !user;
-  const COST_OF_DRAW = 1.5;
-  const money = Object.values(user).map((item) => item.currency); // the pay for draw method does not work because the money variable returns an array with 4 undefined elements
-  console.log(money);
-  console.log(user.currency);
+
   if (user) {
     const lastBotUse = user.lastDrawTime;
     timeDifference = Date.now() - lastBotUse;
@@ -139,10 +140,10 @@ const drawCommand = async (message) => {
   // 1800000 is 30 minutes in milliseconds
   if (userDoesNotExist || timeDifference > DRAW_WAIT_TIME) {
     await storingDraws(message);
-  } else if (money >= COST_OF_DRAW) {
+  } else if (user.currency >= COST_OF_DRAW) {
     await payForDraw(message);
   } else {
-    const timeDifferenceInMs = DRAW_WAIT_TIME - timeDifference; // 60000 is 1 minute
+    const timeDifferenceInMs = DRAW_WAIT_TIME - timeDifference;
     const timeDifferenceInSeconds = Math.round(timeDifferenceInMs / 1000);
     const timeDifferenceInMinutes = Math.round(timeDifferenceInMs / 60000);
     message.reply(
