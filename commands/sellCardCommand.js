@@ -46,7 +46,7 @@ const sellCardCommand = async (message) => {
       try {
         await inventoryRef.child(cardIDToRemove).remove();
         await saleMessage.edit(
-          `You have successfully removed ${deletedCard.name} from your deck.`
+          `You have successfully sold ${deletedCard.name} for $${deletedCard.price}.`
         );
         await saleMessage.reactions.removeAll();
       } catch (error) {

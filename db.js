@@ -8,4 +8,11 @@ admin.initializeApp({
 });
 
 const db = admin.database();
+
+export const getUser = async (userID) => {
+  const userRef = db.ref(`users/${userID}`);
+  const snapshot = await userRef.once("value");
+  return snapshot.val();
+};
+
 export default db;
