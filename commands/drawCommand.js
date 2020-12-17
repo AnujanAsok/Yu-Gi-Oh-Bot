@@ -44,7 +44,7 @@ const drawAndStoreCard = async (message) => {
   message.reply(
     `You just drew ${response.data.name}, a ${
       RARITIES[RARITIES.indexOf(displayedRarity.set_rarity)]
-    } card`
+    } card ($${response.data.card_prices[0].tcgplayer_price})`
   );
   const attachment = new MessageAttachment(
     response.data.card_images[0].image_url
@@ -82,12 +82,14 @@ const getReadableTimeDifference = (timeDifferenceInMs) => {
 };
 
 const payForDraw = async (message) => {
-  const userData = await getUser(message);
+  const userData = await getUser(message.author.id);
   const timeDifferenceInMs = DRAW_WAIT_TIME - timeDifference;
   const buyADrawMessage = await message.reply(
-    `${getReadableTimeDifference(timeDifferenceInMs)} You currently have *$${
-      userData.currency
-    }*. You can pay *$1.50* to draw a card instead of waiting for the time limit. Would you like to buy a draw?`
+    `${getReadableTimeDifference(
+      timeDifferenceInMs
+    )} You currently have *$${userData.currency.toFixed(
+      2
+    )}*. You can pay *$1.50* to draw a card instead of waiting for the time limit. Would you like to buy a draw?`
   );
   await buyADrawMessage.react("💵");
   await buyADrawMessage.react("🚫");
@@ -121,17 +123,13 @@ const payForDraw = async (message) => {
 };
 
 const drawCommand = async (message) => {
-  const ref = db.ref("users");
-  const snapshot = await ref.once("value");
-  const userData = snapshot.val();
-  const userID = message.author.id;
-  const user = userData[userID];
-  const userDoesNotExist = !user;
+  const userData = await getUser(message.author.id);
+  const userDoesNotExist = !userData;
 
-  if (user) {
-    const lastBotUse = user.lastDrawTime;
+  if (userData) {
+    const lastBotUse = userData.lastDrawTime;
     timeDifference = Date.now() - lastBotUse;
-    const userInventory = userData[userID].inventory;
+    const userInventory = userData.inventory;
     const inventorySize = Object.keys(userInventory).length;
     const DECK_SIZE = 60;
     if (inventorySize >= DECK_SIZE) {
@@ -147,7 +145,7 @@ const drawCommand = async (message) => {
 
   if (userDoesNotExist || timeDifference > DRAW_WAIT_TIME) {
     await drawAndStoreCard(message);
-  } else if (user.currency >= DOLLAR_COST_OF_DRAW) {
+  } else if (userData.currency >= DOLLAR_COST_OF_DRAW) {
     if (await payForDraw(message)) {
       drawAndStoreCard(message);
     }
