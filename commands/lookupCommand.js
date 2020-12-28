@@ -29,7 +29,10 @@ const lookUpCommand = async (message) => {
   const attachment = new Discord.MessageAttachment(
     bestCardResult.card_images[0].image_url
   );
-  message.reply(`the top result for your search is: ${bestCardResult.name}`);
+
+  message.reply(
+    `the top result for your search is: ${bestCardResult.name} ($${bestCardResult.card_prices[0].tcgplayer_price})`
+  );
   message.channel.send(attachment);
 
   if (cardDataObjects.length > 1) {
