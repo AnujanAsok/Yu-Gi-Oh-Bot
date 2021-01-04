@@ -7,21 +7,34 @@ const DRAW_WAIT_TIME = 600000; // 600000 is 10 minutes in milliseconds
 const DOLLAR_COST_OF_DRAW = 1.5;
 const RARITIES = [
   "Common",
+  "Short Print",
   "Rare",
-  "Super Rare",
   "Holofoil Rare",
+  "Super Rare",
   "Ultra Rare",
   "Ultimate Rare",
+  "Ghost Rare",
+  "Holographic Rare",
+  "Platinum Rare",
+  "Starlight Rare",
   "Secret Rare",
   "Ultra Secret Rare",
   "Secret Ultra Rare",
+  "10000 Secret Rare",
   "Prismatic Secret Rare",
+  "Normal Parallel Rare",
   "Parallel Rare",
   "Parallel Common",
   "Super Parallel Rare",
   "Ultra Parallel Rare",
+  "Secret Parallel Rare",
+  "Extra Secret Parallel Rare",
   "Starfoil Rare",
-  "Ghost Rare",
+  "Mosaic Rare",
+  "Shatterfoil Rare",
+  "Collector's Rare",
+  "Holographic Parallel Rare",
+  "Gold Secret Rare",
   "Gold Ultra Rare",
 ];
 
@@ -59,15 +72,30 @@ const drawAndStoreCard = async (message) => {
   });
 
   const inventoryRef = userRef.child("inventory");
-  inventoryRef.update({
-    [response.data.id]: {
-      name: response.data.name,
-      image: response.data.card_images[0].image_url,
-      price: response.data.card_prices[0].tcgplayer_price,
-      type: response.data.type,
-      rarity: RARITIES[RARITIES.indexOf(displayedRarity.set_rarity)],
-    },
-  });
+
+  if (inventoryRef) {
+    inventoryRef.update({
+      [response.data.id]: {
+        name: response.data.name,
+        image: response.data.card_images[0].image_url,
+        price: response.data.card_prices[0].tcgplayer_price,
+        type: response.data.type,
+        rarity: RARITIES[RARITIES.indexOf(displayedRarity.set_rarity)],
+      },
+    });
+  } else {
+    userRef.update({
+      inventory: {
+        [response.data.id]: {
+          name: response.data.name,
+          image: response.data.card_images[0].image_url,
+          price: response.data.card_prices[0].tcgplayer_price,
+          type: response.data.type,
+          rarity: RARITIES[RARITIES.indexOf(displayedRarity.set_rarity)],
+        },
+      },
+    });
+  }
 };
 
 const getReadableTimeDifference = (timeDifferenceInMs) => {
@@ -125,11 +153,12 @@ const payForDraw = async (message) => {
 const drawCommand = async (message) => {
   const userData = await getUser(message.author.id);
   const userDoesNotExist = !userData;
+  const userInventory = userData.inventory;
 
-  if (userData) {
+  if (userData && userInventory) {
     const lastBotUse = userData.lastDrawTime;
     timeDifference = Date.now() - lastBotUse;
-    const userInventory = userData.inventory;
+
     const inventorySize = Object.keys(userInventory).length;
     const DECK_SIZE = 60;
     if (inventorySize >= DECK_SIZE) {
@@ -143,7 +172,7 @@ const drawCommand = async (message) => {
     }
   }
 
-  if (userDoesNotExist || timeDifference > DRAW_WAIT_TIME) {
+  if (userDoesNotExist || !userInventory || timeDifference > DRAW_WAIT_TIME) {
     await drawAndStoreCard(message);
   } else if (userData.currency >= DOLLAR_COST_OF_DRAW) {
     if (await payForDraw(message)) {
