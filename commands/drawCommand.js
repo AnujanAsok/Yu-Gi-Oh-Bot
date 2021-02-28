@@ -18,6 +18,7 @@ const RARITIES = [
   "Platinum Rare",
   "Starlight Rare",
   "Secret Rare",
+  "Extra Secret Rare",
   "Ultra Secret Rare",
   "Secret Ultra Rare",
   "10000 Secret Rare",
